@@ -185,25 +185,30 @@ func (r *RepositoryImpl) CreatePR(pr *entity.PullRequest, reviewerIDs []string) 
 }
 
 func (r *RepositoryImpl) MergePR(prID string) (*entity.PullRequest, error) {
-	var pr entity.PullRequest
-	err := r.db.QueryRow(`
-		UPDATE pull_requests 
-		SET status = 'MERGED', merged_at = CURRENT_TIMESTAMP
-		WHERE pull_request_id = $1 AND status != 'MERGED'
-		RETURNING pull_request_id, pull_request_name, author_id, status, created_at, merged_at
-	`, prID).Scan(&pr.ID, &pr.Title, &pr.AuthorID, &pr.Status, &pr.CreatedAt, &pr.MergedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			var status string
-			err = r.db.QueryRow("SELECT status FROM pull_requests WHERE pull_request_id = $1", prID).Scan(&status)
-			if err == nil && status == "MERGED" {
-				return r.GetPR(prID)
-			}
-			return nil, entity.ErrNotFound
-		}
-		return nil, err
-	}
-	return &pr, nil
+    var pr entity.PullRequest
+    err := r.db.QueryRow(`
+        UPDATE pull_requests 
+        SET status = 'MERGED', merged_at = CURRENT_TIMESTAMP
+        WHERE pull_request_id = $1 AND status != 'MERGED'
+        RETURNING pull_request_id, pull_request_name, author_id, status, created_at, merged_at
+    `, prID).Scan(&pr.ID, &pr.Title, &pr.AuthorID, &pr.Status, &pr.CreatedAt, &pr.MergedAt)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            var status string
+            err = r.db.QueryRow("SELECT status FROM pull_requests WHERE pull_request_id = $1", prID).Scan(&status)
+            if err == nil && status == "MERGED" {
+                return r.GetPR(prID)
+            }
+            return nil, entity.ErrNotFound
+        }
+        return nil, err
+    }
+    reviewers, err := r.GetPRReviewers(prID)
+    if err != nil {
+        return nil, err
+    }
+    pr.AssignedReviewers = reviewers
+    return &pr, nil
 }
 
 func (r *RepositoryImpl) GetPR(prID string) (*entity.PullRequest, error) {

@@ -1,9 +1,5 @@
 package entity
 
-import (
-	"errors"
-)
-
 type User struct {
     ID       string `db:"user_id" json:"user_id"`
     Username string `db:"username" json:"username"`
@@ -43,12 +39,3 @@ type PRAssignmentCount struct {
     Title  string `json:"pull_request_name" db:"pull_request_name"`
     Count  int    `json:"count" db:"assignment_count"`
 }
-
-var (
-	ErrTeamExists    = errors.New("team already exists")
-	ErrPRExists      = errors.New("pull request already exists")
-	ErrPRMerged      = errors.New("pull request is merged")
-	ErrNotAssigned   = errors.New("reviewer is not assigned")
-	ErrNoCandidate   = errors.New("no active replacement candidate")
-	ErrNotFound      = errors.New("resource not found")
-)

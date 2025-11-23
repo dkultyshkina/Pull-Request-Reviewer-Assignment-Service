@@ -62,13 +62,20 @@ func (h *Handlers) AddTeam(w http.ResponseWriter, r *http.Request) {
         }
         return
     }
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "team": map[string]interface{}{
-            "team_name": team.Name,
-            "members":   request.Members,
-        },
-    })
+	type TeamResponse struct {
+		TeamName string        `json:"team_name"`
+		Members  []entity.User `json:"members"`
+	}
+	type AddTeamResponse struct {
+		Team TeamResponse `json:"team"`
+	}
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(AddTeamResponse{
+		Team: TeamResponse{
+			TeamName: team.Name,
+			Members:  request.Members,
+		},
+	})
 }
 
 func (h *Handlers) GetTeam(w http.ResponseWriter, r *http.Request) {
@@ -86,9 +93,13 @@ func (h *Handlers) GetTeam(w http.ResponseWriter, r *http.Request) {
         }
         return
     }
-    response := map[string]interface{}{
-		"team_name": team.Name,
-		"members":   members,
+	type TeamResponse struct {
+		TeamName string        `json:"team_name"`
+		Members  []entity.User `json:"members"`
+	}
+	response := TeamResponse{
+		TeamName: team.Name,
+		Members:  members,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -116,14 +127,23 @@ func (h *Handlers) SetUserActive(w http.ResponseWriter, r *http.Request) {
         }
         return
     }
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "user": map[string]interface{}{
-            "user_id":   user.ID,
-            "username":  user.Username,
-            "team_name": user.TeamName,
-            "is_active": user.IsActive,
-        },
-    })
+	type UserResponse struct {
+		UserID   string `json:"user_id"`
+		Username string `json:"username"`
+		TeamName string `json:"team_name"`
+		IsActive bool   `json:"is_active"`
+	}
+	type SetUserActiveResponse struct {
+		User UserResponse `json:"user"`
+	}
+	json.NewEncoder(w).Encode(SetUserActiveResponse{
+		User: UserResponse{
+			UserID:   user.ID,
+			Username: user.Username,
+			TeamName: user.TeamName,
+			IsActive: user.IsActive,
+		},
+	})
 }
 
 func (h *Handlers) CreatePR(w http.ResponseWriter, r *http.Request) {
@@ -150,16 +170,26 @@ func (h *Handlers) CreatePR(w http.ResponseWriter, r *http.Request) {
         }
         return
     }
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "pr": map[string]interface{}{
-            "pull_request_id":   pr.ID,
-            "pull_request_name": pr.Title,
-            "author_id":         pr.AuthorID,
-            "status":            pr.Status,
-            "assigned_reviewers": getReviewerIDs(pr.AssignedReviewers),
-        },
-    })
+	type PRResponse struct {
+		PullRequestID    string   `json:"pull_request_id"`
+		PullRequestName  string   `json:"pull_request_name"`
+		AuthorID         string   `json:"author_id"`
+		Status           string   `json:"status"`
+		AssignedReviewers []string `json:"assigned_reviewers"`
+	}
+	type CreatePRResponse struct {
+		PR PRResponse `json:"pr"`
+	}
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(CreatePRResponse{
+		PR: PRResponse{
+			PullRequestID:    pr.ID,
+			PullRequestName:  pr.Title,
+			AuthorID:         pr.AuthorID,
+			Status:           pr.Status,
+			AssignedReviewers: getReviewerIDs(pr.AssignedReviewers),
+		},
+	})
 }
 
 func (h *Handlers) MergePR(w http.ResponseWriter, r *http.Request) {
@@ -179,16 +209,32 @@ func (h *Handlers) MergePR(w http.ResponseWriter, r *http.Request) {
         }
         return
     }
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "pr": map[string]interface{}{
-            "pull_request_id":   pr.ID,
-            "pull_request_name": pr.Title,
-            "author_id":         pr.AuthorID,
-            "status":            pr.Status,
-            "assigned_reviewers": getReviewerIDs(pr.AssignedReviewers),
-            "mergedAt":          pr.MergedAt,
-        },
-    })
+	json.NewEncoder(w).Encode(struct {
+		PR struct {
+			PullRequestID    string   `json:"pull_request_id"`
+			PullRequestName  string   `json:"pull_request_name"`
+			AuthorID         string   `json:"author_id"`
+			Status           string   `json:"status"`
+			AssignedReviewers []string `json:"assigned_reviewers"`
+			MergedAt         interface{} `json:"mergedAt"`
+		} `json:"pr"`
+	}{
+		PR: struct {
+			PullRequestID    string   `json:"pull_request_id"`
+			PullRequestName  string   `json:"pull_request_name"`
+			AuthorID         string   `json:"author_id"`
+			Status           string   `json:"status"`
+			AssignedReviewers []string `json:"assigned_reviewers"`
+			MergedAt         interface{} `json:"mergedAt"`
+		}{
+			PullRequestID:    pr.ID,
+			PullRequestName:  pr.Title,
+			AuthorID:         pr.AuthorID,
+			Status:           pr.Status,
+			AssignedReviewers: getReviewerIDs(pr.AssignedReviewers),
+			MergedAt:         pr.MergedAt,
+		},
+	})
 }
 
 func (h *Handlers) ReassignReviewer(w http.ResponseWriter, r *http.Request) {
@@ -216,15 +262,26 @@ func (h *Handlers) ReassignReviewer(w http.ResponseWriter, r *http.Request) {
         }
         return
     }
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"pr": map[string]interface{}{
-			"pull_request_id":   pr.ID,
-			"pull_request_name": pr.Title,
-			"author_id":         pr.AuthorID,
-			"status":            pr.Status,
-			"assigned_reviewers": getReviewerIDs(pr.AssignedReviewers),
+	type PRResponse struct {
+		PullRequestID    string   `json:"pull_request_id"`
+		PullRequestName  string   `json:"pull_request_name"`
+		AuthorID         string   `json:"author_id"`
+		Status           string   `json:"status"`
+		AssignedReviewers []string `json:"assigned_reviewers"`
+	}
+	type ReassignReviewerResponse struct {
+		PR         PRResponse `json:"pr"`
+		ReplacedBy string     `json:"replaced_by"`
+	}
+	json.NewEncoder(w).Encode(ReassignReviewerResponse{
+		PR: PRResponse{
+			PullRequestID:    pr.ID,
+			PullRequestName:  pr.Title,
+			AuthorID:         pr.AuthorID,
+			Status:           pr.Status,
+			AssignedReviewers: getReviewerIDs(pr.AssignedReviewers),
 		},
-		"replaced_by": newUserID,
+		ReplacedBy: newUserID,
 	})
 }
 
@@ -239,21 +296,31 @@ func (h *Handlers) GetUserReviewPRs(w http.ResponseWriter, r *http.Request) {
         h.writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
         return
     }
-    shortPRs := make([]map[string]interface{}, len(prs))
+	type PullRequestShort struct {
+		PullRequestID   string `json:"pull_request_id"`
+		PullRequestName string `json:"pull_request_name"`
+		AuthorID        string `json:"author_id"`
+		Status          string `json:"status"`
+	}
+	type UserReviewResponse struct {
+		UserID       string             `json:"user_id"`
+		PullRequests []PullRequestShort `json:"pull_requests"`
+	}
+	shortPRs := make([]PullRequestShort, len(prs))
 	for i, pr := range prs {
-		shortPRs[i] = map[string]interface{}{
-			"pull_request_id":   pr.ID,
-			"pull_request_name": pr.Title,
-			"author_id":         pr.AuthorID,
-			"status":            pr.Status,
+		shortPRs[i] = PullRequestShort{
+			PullRequestID:   pr.ID,
+			PullRequestName: pr.Title,
+			AuthorID:        pr.AuthorID,
+			Status:          pr.Status,
 		}
 	}
-	response := map[string]interface{}{
-		"user_id":       userID,
-		"pull_requests": shortPRs,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	response := UserReviewResponse{
+        UserID:       userID,
+        PullRequests: shortPRs,
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
 
 func getReviewerIDs(reviewers []entity.User) []string {
